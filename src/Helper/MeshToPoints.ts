@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { MeshBVH } from 'three-mesh-bvh';
 
 export function randomPointsInside(_geometry: THREE.BufferGeometry, count: number, ordered: boolean = false, spacing: number = 0.2) {
   console.log("Calling the function")
@@ -13,16 +14,19 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
     new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })
   )
 
-  const raycaster = new THREE.Raycaster()
-
   //A slightly odd direction avoids hitting edges/vertices Exactlya
   const dir = new THREE.Vector3(1, 0.7, 0.21).normalize()
   const p = new THREE.Vector3()
   const points = []
 
+  const ray = new THREE.Ray()
+  const bvh = new MeshBVH(geometry)
+
   const isInside = (pt: THREE.Vector3) => {
-    raycaster.set(pt, dir)
-    return raycaster.intersectObject(mesh, false).length % 2 === 1
+    // raycaster.set(pt, dir)
+    // return raycaster.intersectObject(mesh, false).length % 2 === 1
+    ray.set(pt, dir)
+    return bvh.raycast(ray, THREE.DoubleSide).length % 2 === 1
   }
 
   if (ordered) {
