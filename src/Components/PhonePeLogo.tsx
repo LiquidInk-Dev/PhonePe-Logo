@@ -42,6 +42,18 @@ const PhonePeLogo = () => {
   ])
 
   const meshRef = useRef<THREE.Mesh | null>(null)
+  const sphereRef = useRef<THREE.Mesh | null>(null)
+  const raycastPlaneRef = useRef<THREE.Mesh | null>(null)
+
+  const mouseLocal = useRef(new THREE.Vector3())
+  const prevMouse = useRef(new THREE.Vector3())
+  const mouseVel = useRef(new THREE.Vector3())
+  const rawMouseVel = useRef(new THREE.Vector3())
+  const wasHitting = useRef(false)
+  const mouseActive = useRef(0)
+
+
+  const velocities = useMemo(() => new Float32Array(TOTAL_POINTS * 3), [])
 
   const [phonePeScatterdPoints, diskScatterdPoints, diskAlignedPoints] = useMemo(() => {
     // const points = randomPointsInside(nodes.Mid_polly.geometry, 1000, true, 0.2)
@@ -68,6 +80,8 @@ const PhonePeLogo = () => {
     const phonePeScatterdPointsOffsets = new Float32Array(TOTAL_POINTS * 3)
     const diskScatterdPointsOffsets = new Float32Array(TOTAL_POINTS * 3)
     const diskAlignedPointsOffsets = new Float32Array(TOTAL_POINTS * 3)
+
+    const displacement = new Float32Array(TOTAL_POINTS * 3)
 
     const colors = new Float32Array(TOTAL_POINTS * 3)
     const baseColors = new Float32Array(TOTAL_POINTS * 3)
@@ -103,6 +117,11 @@ const PhonePeLogo = () => {
     geo.setAttribute('aTexIndex', new THREE.InstancedBufferAttribute(texIndex, 1))
     geo.setAttribute('aRandom', new THREE.InstancedBufferAttribute(randoms, 1))
 
+    const dispAttr = new THREE.InstancedBufferAttribute(displacement, 3)
+    dispAttr.setUsage(THREE.DynamicDrawUsage)
+    geo.setAttribute('aDisplacement', dispAttr)
+
+
     return geo
   }, [])
 
@@ -126,10 +145,6 @@ const PhonePeLogo = () => {
         uDistInMax: { value: 30.0 },
         uDistOutMin: { value: 0.2 },
         uDistOutMax: { value: 1.0 },
-        uMouse: { value: new THREE.Vector3(-1.0, -1.0, -1.0) },
-        uMouseRadius: { value: 0.01 },
-        uMouseStrength: { value: 0.01 },
-        uMouseActive: { value: 0.0 },
         uColorTranstion: { value: 0.0 },
         uPulseAmount: { value: 0.25 }
       }
@@ -144,16 +159,16 @@ const PhonePeLogo = () => {
     distInMax: 30.0,
     distOutMin: 0.2,
     distOutMax: 1.0,
-    mouseRadius: 0.01,
-    mouseStrength: 0.01,
-    mouseFollowSpeed: 6.0,
-    mouseFadeSpeed: 4.0,
     colorTransition: 0.0,
-    pulseAmount: 0.25
+    pulseAmount: 0.25,
+    mouseRadius: 0.01,
+    mouseStrength: 0.4,
+    mouseStiffness: 40,
+    mouseDamping: 7,
+    mouseDrag: 5,
+    mouseFadeSpeed: 4
   })
 
-  // Raw raycast hit; uMouse is damped toward this each frame
-  const mouseTarget = useRef(new THREE.Vector3())
   const mouseHitting = useRef(false)
 
   useEffect(() => {
@@ -169,12 +184,14 @@ const PhonePeLogo = () => {
         out_min: types.number(0.2, { range: [0, 2], nudgeMultiplier: 0.001 }),
         out_max: types.number(1, { range: [0, 2], nudgeMultiplier: 0.001 }),
       }),
-      mouse_influence: types.compound({
+      mouse_factor: types.compound({
         radius: types.number(0.01, { range: [0, 0.2], nudgeMultiplier: 0.001 }),
-        strength: types.number(0.01, { range: [0, 0.1], nudgeMultiplier: 0.001 }),
-        follow_speed: types.number(6, { range: [0.5, 30], nudgeMultiplier: 0.1 }),
+        strength: types.number(0.4, { range: [0, 2], nudgeMultiplier: 0.01 }),
+        stiffness: types.number(40, { range: [0, 200], nudgeMultiplier: 1 }),
+        damping: types.number(7, { range: [0, 30], nudgeMultiplier: 0.1 }),
+        drag: types.number(5, { range: [0, 30], nudgeMultiplier: 0.1 }),
         fade_speed: types.number(4, { range: [0.5, 30], nudgeMultiplier: 0.1 }),
-      }),
+      })
     }, { reconfigure: true })
 
     const unsubscribe = object.onValuesChange((value) => {
@@ -187,10 +204,12 @@ const PhonePeLogo = () => {
       uniformRef.current.distInMax = value.distance_factor.in_max
       uniformRef.current.distOutMin = value.distance_factor.out_min
       uniformRef.current.distOutMax = value.distance_factor.out_max
-      uniformRef.current.mouseRadius = value.mouse_influence.radius
-      uniformRef.current.mouseStrength = value.mouse_influence.strength
-      uniformRef.current.mouseFollowSpeed = value.mouse_influence.follow_speed
-      uniformRef.current.mouseFadeSpeed = value.mouse_influence.fade_speed
+      uniformRef.current.mouseRadius = value.mouse_factor.radius
+      uniformRef.current.mouseStrength = value.mouse_factor.strength
+      uniformRef.current.mouseStiffness = value.mouse_factor.stiffness
+      uniformRef.current.mouseDamping = value.mouse_factor.damping
+      uniformRef.current.mouseDrag = value.mouse_factor.drag
+      uniformRef.current.mouseFadeSpeed = value.mouse_factor.fade_speed
     })
 
     return () => unsubscribe()
@@ -214,8 +233,6 @@ const PhonePeLogo = () => {
       mat.uniforms.uDistInMax.value = uniformRef.current.distInMax
       mat.uniforms.uDistOutMin.value = uniformRef.current.distOutMin
       mat.uniforms.uDistOutMax.value = uniformRef.current.distOutMax
-      mat.uniforms.uMouseRadius.value = uniformRef.current.mouseRadius
-      mat.uniforms.uMouseStrength.value = uniformRef.current.mouseStrength
 
       //raycasting
       const raycaster = state.raycaster
@@ -224,30 +241,87 @@ const PhonePeLogo = () => {
       mouseHitting.current = hit.length > 0
       if (mouseHitting.current) {
         const point = hit[0].point
-        mouseTarget.current.copy(point)
+        meshRef.current.worldToLocal(mouseLocal.current.copy(point))
         sphereRef.current?.position.copy(point)
       }
 
-      // Frame-rate independent damping toward the raw hit point
-      const mouse = mat.uniforms.uMouse.value as THREE.Vector3
-      const active = mat.uniforms.uMouseActive.value as number
-      if (active < 0.01) {
-        // effect is faded out: jump straight to the cursor so it doesn't sweep in from the old spot
-        mouse.copy(mouseTarget.current)
-      } else {
-        mouse.lerp(mouseTarget.current, 1 - Math.exp(-uniformRef.current.mouseFollowSpeed * delta))
+      // Cursor just entered the plane: start from here so the jump doesn't read as a huge velocity
+      if (mouseHitting.current && !wasHitting.current) {
+        prevMouse.current.copy(mouseLocal.current)
       }
 
-      // Fade the push in while over the plane, out when the pointer leaves it
-      mat.uniforms.uMouseActive.value = THREE.MathUtils.damp(
-        active, mouseHitting.current ? 1 : 0, uniformRef.current.mouseFadeSpeed, delta
-      )
+      // Mouse velocity = distance moved / time, smoothed over a few frames to remove jitter
+      if (delta > 0) {
+        rawMouseVel.current.subVectors(mouseLocal.current, prevMouse.current).divideScalar(delta)
+        mouseVel.current.lerp(rawMouseVel.current, 1 - Math.exp(-20 * delta))
+      }
+      prevMouse.current.copy(mouseLocal.current)
+      wasHitting.current = mouseHitting.current
 
+      // Fade the effect in while over the plane, out when the pointer leaves it
+      mouseActive.current = THREE.MathUtils.damp(
+        mouseActive.current, mouseHitting.current ? 1 : 0, uniformRef.current.mouseFadeSpeed, delta
+      )
     }
   })
 
-  const raycastPlaneRef = useRef<THREE.Mesh | null>(null)
-  const sphereRef = useRef<THREE.Mesh | null>(null)
+  useFrame((_, delta) => {
+    const dispAttr = geometry.getAttribute('aDisplacement') as THREE.InstancedBufferAttribute
+    const disp = dispAttr.array as Float32Array
+
+    const aligned = geometry.getAttribute('aDiskAlignedOffset').array as Float32Array
+    const scattered = geometry.getAttribute('aDiskScatteredOffset').array as Float32Array
+    const phonePe = geometry.getAttribute('aPhonePeScatteredOffset').array as Float32Array
+
+    const u = uniformRef.current
+    // Clamp so a lag spike can't make the spring overshoot and explode
+    const dt = Math.min(delta, 1 / 30)
+    const friction = Math.exp(-u.mouseDamping * dt)
+    const a = u.alignedToRand, b = u.randToPhonePe
+    const mx = mouseLocal.current.x, mz = mouseLocal.current.z
+    const vx = mouseVel.current.x, vz = mouseVel.current.z
+    const active = mouseActive.current
+    const radius = u.mouseRadius
+
+    for (let i = 0; i < TOTAL_POINTS; i++) {
+      const ix = i * 3, iz = i * 3 + 2
+
+      // Home position: same mix the vertex shader does
+      const firstX = aligned[ix] + (scattered[ix] - aligned[ix]) * a
+      const firstZ = aligned[iz] + (scattered[iz] - aligned[iz]) * a
+      const homeX = firstX + (phonePe[ix] - firstX) * b
+      const homeZ = firstZ + (phonePe[iz] - firstZ) * b
+
+      // Distance from the particle's current (displaced) position to the mouse
+      const dx = homeX + disp[ix] - mx
+      const dz = homeZ + disp[iz] - mz
+      const dist = Math.hypot(dx, dz)
+
+      let fx = 0, fz = 0
+
+      if (active > 0.001 && dist < radius && dist > 1e-6) {
+        const falloff = (1 - THREE.MathUtils.smoothstep(dist, 0, radius)) * active
+        // Push away from the cursor
+        fx += (dx / dist) * falloff * u.mouseStrength
+        fz += (dz / dist) * falloff * u.mouseStrength
+        // Flick along the direction the mouse is moving
+        fx += vx * falloff * u.mouseDrag
+        fz += vz * falloff * u.mouseDrag
+      }
+
+      // Spring pulling it back home
+      fx -= u.mouseStiffness * disp[ix]
+      fz -= u.mouseStiffness * disp[iz]
+
+      // Semi-implicit Euler: velocity first, then position with the new velocity
+      velocities[ix] = (velocities[ix] + fx * dt) * friction
+      velocities[iz] = (velocities[iz] + fz * dt) * friction
+      disp[ix] += velocities[ix] * dt
+      disp[iz] += velocities[iz] * dt
+    }
+    dispAttr.needsUpdate = true
+  })
+
 
   return (
     <>
