@@ -5,7 +5,7 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
   const geometry = (_geometry as THREE.BufferGeometry)
 
   geometry.computeBoundingBox();
-  const box = geometry.boundingBox
+  const box = geometry.boundingBox!
 
   //Double Side so the ray also register hits on back faces (existing mesh)
   const mesh = new THREE.Mesh(
