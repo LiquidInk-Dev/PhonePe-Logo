@@ -3,9 +3,12 @@ uniform sampler2D uTex1;
 uniform sampler2D uTex2;
 
 uniform float uTime;
+uniform float uColorTranstion;
+uniform float uPulseAmount;
 
 varying vec2 vUv;
 varying vec3 vColor;
+varying vec3 vBaseColor;
 varying float vTexIndex;
 varying float vRandom;
 
@@ -21,11 +24,14 @@ void main() {
   if (tex.a < 0.9)
     discard;
 
-  // Example color animation
-  vec3 color =
-      vColor * tex.rgb * (0.85 + 0.15 * sin(uTime * 3.0 + vRandom * 6.2831));
+  float pulse =
+      (1.0 - uPulseAmount) + uPulseAmount * sin(uTime * 3.0 + vRandom * 6.2831);
+  vec3 color = vColor * tex.rgb * pulse;
+  vec3 baseColor = vBaseColor * tex.rgb * pulse;
 
-  gl_FragColor = vec4(color, tex.a);
+  vec3 finalColor = mix(color, baseColor, uColorTranstion);
+
+  gl_FragColor = vec4(finalColor, tex.a);
 
 #include <colorspace_fragment>
 }

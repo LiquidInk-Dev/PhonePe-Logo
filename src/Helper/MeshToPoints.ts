@@ -26,14 +26,24 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
   }
 
   if (ordered) {
-    grid: for (let y = box.min.y + spacing / 2; y <= box.max.y; y += spacing) {
-      for (let x = box.min.x + spacing / 2; x <= box.max.x; x += spacing) {
-        for (let z = box.min.z + spacing / 2; z <= box.max.z; z += spacing) {
-          p.set(x, y, z)
-          if (isInside(p)) points.push(p.clone())
-          if (points.length >= count) break grid
-        }
+    const candidates: THREE.Vector3[] = []
+
+    // Single flat layer in XZ through the middle of the shape — no stacking in y
+    const y = (box.min.y + box.max.y) / 2
+
+    for (let x = box.min.x + spacing / 2; x <= box.max.x; x += spacing) {
+      for (let z = box.min.z + spacing / 2; z <= box.max.z; z += spacing) {
+        p.set(x, y, z)
+        if (isInside(p)) candidates.push(p.clone())
       }
+    }
+
+    // Pick evenly across the whole grid instead of the first `count` (bottom layers)
+    if (candidates.length > count) {
+      const stride = candidates.length / count
+      for (let i = 0; i < count; i++) points.push(candidates[Math.floor(i * stride)])
+    } else {
+      points.push(...candidates)
     }
     const remaining = count - points.length
 
