@@ -1,6 +1,7 @@
 attribute vec3 aPhonePeScatteredOffset;
 attribute vec3 aDiskScatteredOffset;
 attribute vec3 aDiskAlignedOffset;
+attribute vec3 aDisplacement;
 
 attribute vec3 aColor;
 attribute vec3 aBaseColor;
@@ -8,7 +9,6 @@ attribute float aTexIndex;
 attribute float aRandom;
 
 uniform float uTime;
-uniform vec3 uMouse;
 
 uniform float uAlignedToRand;
 uniform float uRandToPhonePe;
@@ -18,10 +18,6 @@ uniform float uDistInMin;
 uniform float uDistInMax;
 uniform float uDistOutMin;
 uniform float uDistOutMax;
-
-uniform float uMouseRadius;
-uniform float uMouseStrength;
-uniform float uMouseActive;
 
 varying vec2 vUv;
 varying vec3 vColor;
@@ -52,13 +48,7 @@ void main() {
   // offset.y += sin(uTime + phase) * 0.01;
   vec3 finalPosition = vec3(offset + local);
 
-  vec3 mouseInfluenceDirection = (offset - vec3(uMouse.x, 0.0, uMouse.z));
-  float dist = length(mouseInfluenceDirection);
-  float mouseInfluenceAmplitude = 1. - smoothstep(0.0, uMouseRadius, dist);
-  vec3 push = normalize(mouseInfluenceDirection + 1e-4) *
-              mouseInfluenceAmplitude * uMouseStrength * uMouseActive;
-
-  vec4 modelPosition = modelMatrix * vec4(finalPosition + push, 1.0);
+  vec4 modelPosition = modelMatrix * vec4(finalPosition + aDisplacement, 1.0);
   vec4 viewPosition = viewMatrix * modelPosition;
   vec4 projectedPosition = projectionMatrix * viewPosition;
   gl_Position = projectedPosition;
