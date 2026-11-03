@@ -7,3 +7,16 @@ body,
   margin: 0;
   box-sizing: border-box;
 }
+
+/* The document never scrolls, so the mobile address bar stays put
+   (no resize → no canvas resize / ScrollTrigger refresh mid-gesture) */
+html,
+body {
+  overflow: hidden;
+}
+
+/* #root is the scroller instead (ScrollTrigger uses scroller: '#root') */
+#root {
+  overflow-y: auto;
+  overscroll-behavior: none;
+}

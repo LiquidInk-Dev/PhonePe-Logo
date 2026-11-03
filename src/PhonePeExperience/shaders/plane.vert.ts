@@ -1,3 +1,4 @@
+const planeVertexShader = `
 attribute vec3 aPhonePeScatteredOffset;
 attribute vec3 aDiskScatteredOffset;
 attribute vec3 aDiskAlignedOffset;
@@ -59,3 +60,6 @@ void main() {
   vTexIndex = aTexIndex;
   vRandom = aRandom;
 }
+`
+
+export default planeVertexShader
