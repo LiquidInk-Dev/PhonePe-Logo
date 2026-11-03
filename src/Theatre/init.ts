@@ -6,6 +6,7 @@ import sheet from './PhonePe.theatre-project-state.json'
 
 export async function initStudio() {
   // if (!import.meta.env.DEV) return
+  return
   try {
     const [studioMod, extMod] = await Promise.all([
       import('@theatre/studio'),

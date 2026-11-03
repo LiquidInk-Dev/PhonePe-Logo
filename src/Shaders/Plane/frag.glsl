@@ -1,6 +1,7 @@
 uniform sampler2D uTex0;
 uniform sampler2D uTex1;
 uniform sampler2D uTex2;
+uniform sampler2D uTex3;
 
 uniform float uTime;
 uniform float uColorTranstion;
@@ -16,10 +17,12 @@ void main() {
   vec4 t0 = texture2D(uTex0, vUv);
   vec4 t1 = texture2D(uTex1, vUv);
   vec4 t2 = texture2D(uTex2, vUv);
+  vec4 t3 = texture2D(uTex3, vUv);
 
   float is1 = step(0.5, vTexIndex);
   float is2 = step(1.5, vTexIndex);
-  vec4 tex = mix(mix(t0, t1, is1), t2, is2);
+  float is3 = step(2.5, vTexIndex);
+  vec4 tex = mix(mix(mix(t0, t1, is1), t2, is2), t3, is3);
 
   if (tex.a < 0.9)
     discard;

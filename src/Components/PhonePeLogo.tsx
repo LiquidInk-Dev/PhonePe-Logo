@@ -10,6 +10,7 @@ import { useFrame } from '@react-three/fiber'
 import { mainSheet } from '../Theatre/init'
 import { types } from '@theatre/core'
 import { editable as e } from '@theatre/r3f'
+import useMouse from '../Helper/useMouse'
 
 type DiskGLTFResult = GLTF & {
   nodes: {
@@ -25,32 +26,44 @@ type GLTFResult = GLTF & {
   materials: {}
 }
 
-const TOTAL_POINTS = 8000
+const TOTAL_POINTS = 7000
+// How fast the smoothed pointer catches up to the real one (higher = snappier, lower = smoother)
+const POINTER_SMOOTHING = 30
 
 const PALETTE = [
   '#61249f', '#793fb3', '#c192f1', '#e565e1',
   '#f48f9a', '#ffd26a', '#6bc8c9',
 ].map((c) => new THREE.Color(c))
 
-const PhonePeLogo = () => {
-  const { nodes } = useGLTF('assets/reference/MidPolyPhonepe.glb') as unknown as GLTFResult
-  const { nodes: diskNodes } = useGLTF('assets/reference/MidPolyDisk.glb') as unknown as DiskGLTFResult
+// URLs of the GLB files. The PhonePe file must contain a mesh named `Mid_polly`, the disk file one named `Disk`.
+export type ModelUrls = {
+  phonePe: string
+  disk: string
+}
+
+const PhonePeLogo = ({ models }: { models: ModelUrls }) => {
+  const { nodes } = useGLTF(models.phonePe) as unknown as GLTFResult
+  const { nodes: diskNodes } = useGLTF(models.disk) as unknown as DiskGLTFResult
   const textures = useTexture([
-    'assets/shapes/1.png',
-    'assets/shapes/2.png',
-    'assets/shapes/3.png',
+    'assets/shapes/1.webp',
+    'assets/shapes/2.webp',
+    'assets/shapes/3.webp',
+    'assets/shapes/4.webp',
   ])
 
   const meshRef = useRef<THREE.Mesh | null>(null)
   const sphereRef = useRef<THREE.Mesh | null>(null)
   const raycastPlaneRef = useRef<THREE.Mesh | null>(null)
 
-  const mouseLocal = useRef(new THREE.Vector3())
+  const pointerTarget = useRef(new THREE.Vector3()) // where the pointer actually is
+  const mouseLocal = useRef(new THREE.Vector3())    // smoothed position the particles react to
   const prevMouse = useRef(new THREE.Vector3())
   const mouseVel = useRef(new THREE.Vector3())
   const rawMouseVel = useRef(new THREE.Vector3())
   const wasHitting = useRef(false)
   const mouseActive = useRef(0)
+
+  const { position: mousePos, active: pointerActive } = useMouse()
 
 
   const velocities = useMemo(() => new Float32Array(TOTAL_POINTS * 3), [])
@@ -62,8 +75,6 @@ const PhonePeLogo = () => {
     const diskAlignedPoints = randomPointsInside(diskNodes.Disk.geometry, TOTAL_POINTS, true, 0.003)
 
     return [phonePeScatterdPoints, diskScatterdPoints, diskAlignedPoints]
-
-    // return points
   }, [nodes, diskNodes])
 
   const geometry = useMemo(() => {
@@ -103,7 +114,7 @@ const PhonePeLogo = () => {
       diskAlignedPointsOffsets[i3 + 2] = diskAlignedPoints[i].z
 
       PALETTE[Math.floor(Math.random() * PALETTE.length)].toArray(colors, i * 3)
-      PALETTE[Math.floor(Math.random() * 2)].toArray(baseColors, i * 3)
+      PALETTE[Math.floor(Math.random() * 3)].toArray(baseColors, i * 3)
       texIndex[i] = Math.floor(Math.random() * textures.length)
       randoms[i] = Math.random()
 
@@ -138,6 +149,7 @@ const PhonePeLogo = () => {
         uTex0: { value: textures[0] },
         uTex1: { value: textures[1] },
         uTex2: { value: textures[2] },
+        uTex3: { value: textures[3] },
         uAlignedToRand: { value: 0.0 },
         uRandToPhonePe: { value: 0.0 },
         uBaseScale: { value: 1.0 },
@@ -236,18 +248,24 @@ const PhonePeLogo = () => {
 
       //raycasting
       const raycaster = state.raycaster
-      raycaster.setFromCamera(state.pointer, state.camera)
+      raycaster.setFromCamera(mousePos.current, state.camera)
       const hit = raycastPlaneRef.current ? raycaster.intersectObject(raycastPlaneRef.current) : []
-      mouseHitting.current = hit.length > 0
+      mouseHitting.current = hit.length > 0 && pointerActive.current
       if (mouseHitting.current) {
         const point = hit[0].point
-        meshRef.current.worldToLocal(mouseLocal.current.copy(point))
+        meshRef.current.worldToLocal(pointerTarget.current.copy(point))
         sphereRef.current?.position.copy(point)
-      }
 
-      // Cursor just entered the plane: start from here so the jump doesn't read as a huge velocity
-      if (mouseHitting.current && !wasHitting.current) {
-        prevMouse.current.copy(mouseLocal.current)
+        if (!wasHitting.current) {
+          // Pointer just arrived (finger down / cursor entered): snap there,
+          // so the jump doesn't read as a huge velocity
+          mouseLocal.current.copy(pointerTarget.current)
+          prevMouse.current.copy(mouseLocal.current)
+        } else {
+          // Ease toward the pointer. Touch events arrive unevenly (often 60Hz on
+          // 120Hz screens, batched during scroll), so the raw position moves in steps
+          mouseLocal.current.lerp(pointerTarget.current, 1 - Math.exp(-POINTER_SMOOTHING * delta))
+        }
       }
 
       // Mouse velocity = distance moved / time, smoothed over a few frames to remove jitter
@@ -276,12 +294,14 @@ const PhonePeLogo = () => {
     const u = uniformRef.current
     // Clamp so a lag spike can't make the spring overshoot and explode
     const dt = Math.min(delta, 1 / 30)
+    // const dt = delta
     const friction = Math.exp(-u.mouseDamping * dt)
     const a = u.alignedToRand, b = u.randToPhonePe
     const mx = mouseLocal.current.x, mz = mouseLocal.current.z
     const vx = mouseVel.current.x, vz = mouseVel.current.z
     const active = mouseActive.current
     const radius = u.mouseRadius
+    const radiusSq = radius * radius
 
     for (let i = 0; i < TOTAL_POINTS; i++) {
       const ix = i * 3, iz = i * 3 + 2
@@ -292,14 +312,14 @@ const PhonePeLogo = () => {
       const homeX = firstX + (phonePe[ix] - firstX) * b
       const homeZ = firstZ + (phonePe[iz] - firstZ) * b
 
-      // Distance from the particle's current (displaced) position to the mouse
       const dx = homeX + disp[ix] - mx
       const dz = homeZ + disp[iz] - mz
-      const dist = Math.hypot(dx, dz)
+      const distSq = dx * dx + dz * dz
 
       let fx = 0, fz = 0
 
-      if (active > 0.001 && dist < radius && dist > 1e-6) {
+      if (active > 0.001 && distSq < radiusSq && distSq > 1e-12) {
+        const dist = Math.sqrt(distSq)
         const falloff = (1 - THREE.MathUtils.smoothstep(dist, 0, radius)) * active
         // Push away from the cursor
         fx += (dx / dist) * falloff * u.mouseStrength
@@ -340,10 +360,6 @@ const PhonePeLogo = () => {
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, -0.01, 0]}
         />
-        <mesh ref={sphereRef}>
-          <sphereGeometry args={[0.001]} />
-          <meshNormalMaterial />
-        </mesh>
       </e.group>
     </>
   )
