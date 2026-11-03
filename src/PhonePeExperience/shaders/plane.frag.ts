@@ -1,3 +1,4 @@
+const planeFragmentShader = `
 uniform sampler2D uTex0;
 uniform sampler2D uTex1;
 uniform sampler2D uTex2;
@@ -38,3 +39,6 @@ void main() {
 
 #include <colorspace_fragment>
 }
+`
+
+export default planeFragmentShader

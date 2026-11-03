@@ -2,7 +2,6 @@ import * as THREE from 'three'
 import { MeshBVH } from 'three-mesh-bvh';
 
 export function randomPointsInside(_geometry: THREE.BufferGeometry, count: number, ordered: boolean = false, spacing: number = 0.2) {
-  console.log("Calling the function")
   const geometry = (_geometry as THREE.BufferGeometry)
 
   geometry.computeBoundingBox();
@@ -33,7 +32,6 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
     const candidates: THREE.Vector3[] = []
 
     const y = (box.min.y + box.max.y) / 2
-    console.log(y)
     for (let x = box.min.x + spacing / 2; x <= box.max.x; x += spacing) {
       for (let z = box.min.z + spacing / 2; z <= box.max.z; z += spacing) {
         p.set(x, y + THREE.MathUtils.seededRandom() * 0.00001, z)

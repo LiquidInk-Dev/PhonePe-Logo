@@ -1,12 +1,11 @@
+"use client"
+
 import { Canvas, useFrame } from "@react-three/fiber"
-import PhonePeLogo, { type ModelUrls } from "./PhonePeLogo"
-import { initStudio, mainSheet } from "../Theatre/init"
+import PhonePeLogo, { type ModelUrls, type TextureUrls } from "./PhonePeLogo"
+import { initStudio, mainSheet } from "./theatre/init"
 import { PerspectiveCamera, SheetProvider } from "@theatre/r3f"
 import * as THREE from 'three'
-import type { RefObject } from "react"
-import { AdaptiveDpr } from "@react-three/drei"
-
-initStudio()
+import { useEffect, type CSSProperties, type RefObject } from "react"
 
 const BASE_FOV = 42
 const DESIGN_ASPECT = 1
@@ -31,14 +30,22 @@ const ContainFov = () => {
   return null
 }
 
-type ExperienceProps = {
+export type ExperienceProps = {
   progressRef: RefObject<number>
   models: ModelUrls
+  textures: TextureUrls
+  studio?: boolean
+  className?: string
+  style?: CSSProperties
 }
 
-const Shell = ({ progressRef, models }: ExperienceProps) => {
+type ShellProps = Pick<ExperienceProps, 'progressRef' | 'models' | 'textures'>
+
+const SEQUENCE_LENGTH = 10
+
+const Shell = ({ progressRef, models, textures }: ShellProps) => {
   useFrame(() => {
-    mainSheet.sequence.position = THREE.MathUtils.mapLinear(progressRef.current, 0, 1, 0, 10)
+    mainSheet.sequence.position = THREE.MathUtils.mapLinear(progressRef.current ?? 0, 0, 1, 0, SEQUENCE_LENGTH)
   })
 
   return (
@@ -46,15 +53,20 @@ const Shell = ({ progressRef, models }: ExperienceProps) => {
       {/* Dont change the camera setting */}
       <PerspectiveCamera theatreKey="Camera" makeDefault position={[0, 1, 0]} lookAt={[0, 0, 0]} fov={BASE_FOV} />
       <ContainFov />
-      <PhonePeLogo models={models} />
+      <PhonePeLogo models={models} textures={textures} />
     </SheetProvider>
   )
 }
 
 
-const Experience = ({ progressRef, models }: ExperienceProps) => {
+const Experience = ({ progressRef, models, textures, studio = false, className, style }: ExperienceProps) => {
+  useEffect(() => {
+    if (studio) initStudio()
+  }, [studio])
+
   return (
     <Canvas
+      className={className}
       style={{
         height: '100%',
         width: '100%',
@@ -62,10 +74,10 @@ const Experience = ({ progressRef, models }: ExperienceProps) => {
         // Vertical swipes scroll the page (browser keeps them),
         // horizontal swipes go fully to the canvas (the page can't scroll sideways anyway)
         touchAction: 'pan-y',
+        ...style,
       }}
     >
-      <AdaptiveDpr pixelated />
-      <Shell progressRef={progressRef} models={models} />
+      <Shell progressRef={progressRef} models={models} textures={textures} />
     </Canvas>
   )
 }

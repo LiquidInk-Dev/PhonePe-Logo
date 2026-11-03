@@ -3,14 +3,14 @@ import { useGLTF, useTexture } from '@react-three/drei'
 import type { GLTF } from 'three-stdlib'
 import { useEffect, useMemo, useRef } from 'react'
 
-import planeFragShader from '../Shaders/Plane/frag.glsl?raw'
-import planeVertShader from '../Shaders/Plane/vert.glsl?raw'
-import { randomPointsInside } from '../Helper/MeshToPoints'
+import planeFragShader from './shaders/plane.frag'
+import planeVertShader from './shaders/plane.vert'
+import { randomPointsInside } from './helpers/meshToPoints'
 import { useFrame } from '@react-three/fiber'
-import { mainSheet } from '../Theatre/init'
+import { mainSheet } from './theatre/init'
 import { types } from '@theatre/core'
 import { editable as e } from '@theatre/r3f'
-import useMouse from '../Helper/useMouse'
+import useMouse from './helpers/useMouse'
 
 type DiskGLTFResult = GLTF & {
   nodes: {
@@ -41,15 +41,12 @@ export type ModelUrls = {
   disk: string
 }
 
-const PhonePeLogo = ({ models }: { models: ModelUrls }) => {
+export type TextureUrls = [string, string, string, string]
+
+const PhonePeLogo = ({ models, textures: textureUrls }: { models: ModelUrls, textures: TextureUrls }) => {
   const { nodes } = useGLTF(models.phonePe) as unknown as GLTFResult
   const { nodes: diskNodes } = useGLTF(models.disk) as unknown as DiskGLTFResult
-  const textures = useTexture([
-    'assets/shapes/1.webp',
-    'assets/shapes/2.webp',
-    'assets/shapes/3.webp',
-    'assets/shapes/4.webp',
-  ])
+  const textures = useTexture(textureUrls)
 
   const meshRef = useRef<THREE.Mesh | null>(null)
   const sphereRef = useRef<THREE.Mesh | null>(null)
