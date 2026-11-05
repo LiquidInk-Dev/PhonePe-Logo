@@ -1,17 +1,19 @@
 import { useRef } from "react"
-import Experience, { type ModelUrls, type TextureUrls } from "./PhonePeExperience"
+import Experience from "./PhonePeExperience"
 import { useGSAP } from "@gsap/react"
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
 
-const MODELS: ModelUrls = {
+/** @type {import('./PhonePeExperience').ModelUrls} */
+const MODELS = {
   phonePe: 'assets/models/MidPolyPhonepe.glb',
   disk: 'assets/models/MidPolyDisk.glb',
 }
 
-const TEXTURES: TextureUrls = [
+/** @type {import('./PhonePeExperience').TextureUrls} */
+const TEXTURES = [
   'assets/shapes/1.webp',
   'assets/shapes/2.webp',
   'assets/shapes/3.webp',
@@ -19,7 +21,7 @@ const TEXTURES: TextureUrls = [
 ]
 
 const App = () => {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef(/** @type {HTMLDivElement | null} */ (null))
   const progressRef = useRef(0)
 
   useGSAP(() => {

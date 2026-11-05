@@ -1,7 +1,8 @@
 import { getProject } from '@theatre/core'
 import sheet from './PhonePe.theatre-project-state.json'
 
-let studioPromise: Promise<void> | null = null
+/** @type {Promise<void> | null} */
+let studioPromise = null
 
 export function initStudio() {
   if (studioPromise) return studioPromise
@@ -12,8 +13,8 @@ export function initStudio() {
         import('@theatre/studio'),
         import('@theatre/r3f/dist/extension'),
       ])
-      const studio = (studioMod as any).default ?? studioMod
-      const extension = (extMod as any).default ?? extMod
+      const studio = /** @type {any} */ (studioMod).default ?? studioMod
+      const extension = /** @type {any} */ (extMod).default ?? extMod
 
       studio.default.extend(extension)
       studio.default.initialize()
