@@ -1,6 +1,5 @@
 import * as THREE from 'three'
 import { useGLTF, useTexture } from '@react-three/drei'
-import type { GLTF } from 'three-stdlib'
 import { useEffect, useMemo, useRef } from 'react'
 
 import planeFragShader from './shaders/plane.frag'
@@ -12,19 +11,9 @@ import { types } from '@theatre/core'
 import { editable as e } from '@theatre/r3f'
 import useMouse from './helpers/useMouse'
 
-type DiskGLTFResult = GLTF & {
-  nodes: {
-    Disk: THREE.Mesh
-  }
-  materials: {}
-}
+/** @typedef {import('three-stdlib').GLTF & { nodes: { Disk: THREE.Mesh }, materials: {} }} DiskGLTFResult */
 
-type GLTFResult = GLTF & {
-  nodes: {
-    Mid_polly: THREE.Mesh
-  }
-  materials: {}
-}
+/** @typedef {import('three-stdlib').GLTF & { nodes: { Mid_polly: THREE.Mesh }, materials: {} }} GLTFResult */
 
 const TOTAL_POINTS = 7000
 // How fast the smoothed pointer catches up to the real one (higher = snappier, lower = smoother)
@@ -36,21 +25,23 @@ const PALETTE = [
 ].map((c) => new THREE.Color(c))
 
 // URLs of the GLB files. The PhonePe file must contain a mesh named `Mid_polly`, the disk file one named `Disk`.
-export type ModelUrls = {
-  phonePe: string
-  disk: string
-}
+/**
+ * @typedef {object} ModelUrls
+ * @property {string} phonePe
+ * @property {string} disk
+ */
 
-export type TextureUrls = [string, string, string, string]
+/** @typedef {[string, string, string, string]} TextureUrls */
 
-const PhonePeLogo = ({ models, textures: textureUrls }: { models: ModelUrls, textures: TextureUrls }) => {
-  const { nodes } = useGLTF(models.phonePe) as unknown as GLTFResult
-  const { nodes: diskNodes } = useGLTF(models.disk) as unknown as DiskGLTFResult
+/** @param {{ models: ModelUrls, textures: TextureUrls }} props */
+const PhonePeLogo = ({ models, textures: textureUrls }) => {
+  const { nodes } = /** @type {GLTFResult} */ (/** @type {unknown} */ (useGLTF(models.phonePe)))
+  const { nodes: diskNodes } = /** @type {DiskGLTFResult} */ (/** @type {unknown} */ (useGLTF(models.disk)))
   const textures = useTexture(textureUrls)
 
-  const meshRef = useRef<THREE.Mesh | null>(null)
-  const sphereRef = useRef<THREE.Mesh | null>(null)
-  const raycastPlaneRef = useRef<THREE.Mesh | null>(null)
+  const meshRef = useRef(/** @type {THREE.Mesh | null} */ (null))
+  const sphereRef = useRef(/** @type {THREE.Mesh | null} */ (null))
+  const raycastPlaneRef = useRef(/** @type {THREE.Mesh | null} */ (null))
 
   const pointerTarget = useRef(new THREE.Vector3()) // where the pointer actually is
   const mouseLocal = useRef(new THREE.Vector3())    // smoothed position the particles react to
@@ -229,7 +220,7 @@ const PhonePeLogo = ({ models, textures: textureUrls }: { models: ModelUrls, tex
 
   useFrame((state, delta) => {
     if (meshRef.current) {
-      const mat = meshRef.current.material as THREE.ShaderMaterial
+      const mat = /** @type {THREE.ShaderMaterial} */ (meshRef.current.material)
       mat.uniforms.uTime.value = state.clock.elapsedTime
 
 
@@ -281,12 +272,12 @@ const PhonePeLogo = ({ models, textures: textureUrls }: { models: ModelUrls, tex
   })
 
   useFrame((_, delta) => {
-    const dispAttr = geometry.getAttribute('aDisplacement') as THREE.InstancedBufferAttribute
-    const disp = dispAttr.array as Float32Array
+    const dispAttr = /** @type {THREE.InstancedBufferAttribute} */ (geometry.getAttribute('aDisplacement'))
+    const disp = dispAttr.array
 
-    const aligned = geometry.getAttribute('aDiskAlignedOffset').array as Float32Array
-    const scattered = geometry.getAttribute('aDiskScatteredOffset').array as Float32Array
-    const phonePe = geometry.getAttribute('aPhonePeScatteredOffset').array as Float32Array
+    const aligned = geometry.getAttribute('aDiskAlignedOffset').array
+    const scattered = geometry.getAttribute('aDiskScatteredOffset').array
+    const phonePe = geometry.getAttribute('aPhonePeScatteredOffset').array
 
     const u = uniformRef.current
     // Clamp so a lag spike can't make the spring overshoot and explode

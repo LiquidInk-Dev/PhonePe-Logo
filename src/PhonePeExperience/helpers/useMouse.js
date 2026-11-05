@@ -24,7 +24,11 @@ const useMouse = () => {
     const element = gl.domElement
 
     // Screen pixels → NDC (-1..1), the coordinates the raycaster expects
-    const setFromClient = (x: number, y: number) => {
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
+    const setFromClient = (x, y) => {
       const r = element.getBoundingClientRect()
       position.current.set(
         ((x - r.left) / r.width) * 2 - 1,
@@ -33,12 +37,14 @@ const useMouse = () => {
     }
 
     // --- Mouse / pen ---
-    const onPointerMove = (e: PointerEvent) => {
+    /** @param {PointerEvent} e */
+    const onPointerMove = (e) => {
       if (e.pointerType === 'touch') return // fingers are handled by touch events
       setFromClient(e.clientX, e.clientY)
       active.current = true
     }
-    const onPointerLeave = (e: PointerEvent) => {
+    /** @param {PointerEvent} e */
+    const onPointerLeave = (e) => {
       if (e.pointerType !== 'touch') active.current = false
     }
 
@@ -49,13 +55,15 @@ const useMouse = () => {
     // We don't guess the direction ourselves; we listen for the browser's decision.
     let browserOwnsGesture = false
 
-    const onPointerCancel = (e: PointerEvent) => {
+    /** @param {PointerEvent} e */
+    const onPointerCancel = (e) => {
       if (e.pointerType !== 'touch') return
       browserOwnsGesture = true
       active.current = false
     }
 
-    const onTouch = (e: TouchEvent) => {
+    /** @param {TouchEvent} e */
+    const onTouch = (e) => {
       // First finger down = a new gesture; the browser hasn't decided yet
       if (e.type === 'touchstart' && e.touches.length === 1) browserOwnsGesture = false
 
@@ -67,7 +75,8 @@ const useMouse = () => {
       setFromClient(t.clientX, t.clientY)
       active.current = true
     }
-    const onTouchEnd = (e: TouchEvent) => {
+    /** @param {TouchEvent} e */
+    const onTouchEnd = (e) => {
       if (e.touches.length === 0) active.current = false
     }
 

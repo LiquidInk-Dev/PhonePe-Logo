@@ -1,11 +1,11 @@
 "use client"
 
 import { Canvas, useFrame } from "@react-three/fiber"
-import PhonePeLogo, { type ModelUrls, type TextureUrls } from "./PhonePeLogo"
+import PhonePeLogo from "./PhonePeLogo"
 import { initStudio, mainSheet } from "./theatre/init"
 import { PerspectiveCamera, SheetProvider } from "@theatre/r3f"
 import * as THREE from 'three'
-import { useEffect, type CSSProperties, type RefObject } from "react"
+import { useEffect } from "react"
 
 const BASE_FOV = 42
 const DESIGN_ASPECT = 1
@@ -30,20 +30,22 @@ const ContainFov = () => {
   return null
 }
 
-export type ExperienceProps = {
-  progressRef: RefObject<number>
-  models: ModelUrls
-  textures: TextureUrls
-  studio?: boolean
-  className?: string
-  style?: CSSProperties
-}
+/**
+ * @typedef {object} ExperienceProps
+ * @property {import('react').RefObject<number>} progressRef
+ * @property {import('./PhonePeLogo').ModelUrls} models
+ * @property {import('./PhonePeLogo').TextureUrls} textures
+ * @property {boolean} [studio]
+ * @property {string} [className]
+ * @property {import('react').CSSProperties} [style]
+ */
 
-type ShellProps = Pick<ExperienceProps, 'progressRef' | 'models' | 'textures'>
+/** @typedef {Pick<ExperienceProps, 'progressRef' | 'models' | 'textures'>} ShellProps */
 
 const SEQUENCE_LENGTH = 10
 
-const Shell = ({ progressRef, models, textures }: ShellProps) => {
+/** @param {ShellProps} props */
+const Shell = ({ progressRef, models, textures }) => {
   useFrame(() => {
     mainSheet.sequence.position = THREE.MathUtils.mapLinear(progressRef.current ?? 0, 0, 1, 0, SEQUENCE_LENGTH)
   })
@@ -59,7 +61,8 @@ const Shell = ({ progressRef, models, textures }: ShellProps) => {
 }
 
 
-const Experience = ({ progressRef, models, textures, studio = false, className, style }: ExperienceProps) => {
+/** @param {ExperienceProps} props */
+const Experience = ({ progressRef, models, textures, studio = false, className, style }) => {
   useEffect(() => {
     if (studio) initStudio()
   }, [studio])

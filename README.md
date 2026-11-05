@@ -10,19 +10,16 @@ You choose how the animation advances. You pass a number from `0` to `1` (usuall
 
 ## 1. Quick start
 
-```tsx
+```jsx
 import { useRef } from "react";
-import Experience, {
-  type ModelUrls,
-  type TextureUrls,
-} from "./PhonePeExperience";
+import Experience from "./PhonePeExperience";
 
-const MODELS: ModelUrls = {
+const MODELS = {
   phonePe: "/assets/models/MidPolyPhonepe.glb",
   disk: "/assets/models/MidPolyDisk.glb",
 };
 
-const TEXTURES: TextureUrls = [
+const TEXTURES = [
   "/assets/shapes/1.webp",
   "/assets/shapes/2.webp",
   "/assets/shapes/3.webp",
@@ -56,7 +53,7 @@ This renders the first frame of the animation. To make it play, see [Driving the
 | ------- | ------------------------------------------------------------------------------------------------ |
 | React   | **19+** (required by `@react-three/fiber` v9)                                                    |
 | Browser | WebGL 2                                                                                          |
-| Bundler | Any that can import `.ts`/`.tsx` and `.json`, such as Vite, Next.js, webpack 5, Rspack or Parcel |
+| Bundler | Any that can import `.js`/`.jsx` and `.json`, such as Vite, Next.js, webpack 5, Rspack or Parcel |
 
 The component doesn't use any bundler-specific features. There are no `?raw` imports, no `import.meta.env`, and no special loaders.
 
@@ -64,7 +61,7 @@ The component doesn't use any bundler-specific features. There are no `?raw` imp
 
 ```bash
 npm install three @react-three/fiber @react-three/drei @theatre/core @theatre/r3f @theatre/studio three-mesh-bvh
-npm install -D @types/three
+npm install -D @types/three # optional: editor autocomplete
 ```
 
 These are the versions it was built and tested with:
@@ -107,35 +104,36 @@ You can put the assets anywhere, including a CDN, as long as the URLs you pass i
 
 ```
 PhonePeExperience/
-  index.ts                 Public exports
-  Experience.tsx           The component: Canvas, camera, timeline
-  PhonePeLogo.tsx          Particles: geometry, material, mouse physics
+  index.js                 Public exports
+  Experience.jsx           The component: Canvas, camera, timeline
+  PhonePeLogo.jsx          Particles: geometry, material, mouse physics
   helpers/
-    meshToPoints.ts        Samples points inside the GLB meshes
-    useMouse.ts            Mouse and touch tracking that doesn't block scrolling
+    meshToPoints.js        Samples points inside the GLB meshes
+    useMouse.js            Mouse and touch tracking that doesn't block scrolling
   shaders/
-    plane.vert.ts          Vertex shader (GLSL as a TS string)
-    plane.frag.ts          Fragment shader (GLSL as a TS string)
+    plane.vert.js          Vertex shader (GLSL as a JS string)
+    plane.frag.js          Fragment shader (GLSL as a JS string)
   theatre/
-    init.ts                Theatre project, sheet and studio loader
+    init.js                Theatre project, sheet and studio loader
     PhonePe.theatre-project-state.json   The animation
 ```
 
-Import only from `index.ts`. Treat everything else as internal.
+Import only from `index.js`. Treat everything else as internal.
 
 ---
 
 ## 3. Props
 
-```ts
-type ExperienceProps = {
-  progressRef: RefObject<number>;
-  models: ModelUrls;
-  textures: TextureUrls;
-  studio?: boolean;
-  className?: string;
-  style?: CSSProperties;
-};
+```js
+/**
+ * @typedef {object} ExperienceProps
+ * @property {RefObject<number>} progressRef
+ * @property {ModelUrls} models
+ * @property {TextureUrls} textures
+ * @property {boolean} [studio]
+ * @property {string} [className]
+ * @property {CSSProperties} [style]
+ */
 ```
 
 | Prop          | Required | Description                                                                                                                                                                        |
@@ -171,7 +169,7 @@ The usual setup is a tall section with the canvas pinned (sticky) inside it, so 
 npm install gsap @gsap/react
 ```
 
-```tsx
+```jsx
 import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -181,7 +179,7 @@ import Experience from "./PhonePeExperience";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 export default function LogoSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef(null);
   const progressRef = useRef(0);
 
   useGSAP(
@@ -220,7 +218,7 @@ export default function LogoSection() {
 
 If your page scrolls inside an element instead of the window, pass it as `scroller`:
 
-```ts
+```js
 ScrollTrigger.create({
   trigger: sectionRef.current,
   scroller: document.getElementById("root"),
@@ -239,7 +237,7 @@ The demo app in this repo works this way. `html, body` have `overflow: hidden` a
 
 Anything that writes a number from 0 to 1 into the ref works:
 
-```tsx
+```jsx
 <input
   type="range"
   min={0}
@@ -251,7 +249,7 @@ Anything that writes a number from 0 to 1 into the ref works:
 />
 ```
 
-```ts
+```js
 gsap.to(progressRef, { current: 1, duration: 4, ease: "power2.inOut" });
 ```
 
@@ -276,7 +274,7 @@ All keyframes live in `theatre/PhonePe.theatre-project-state.json`. They cover t
 
 1. Render the component with `studio` turned on, **locally only**:
 
-   ```tsx
+   ```jsx
    <Experience
      studio
      progressRef={progressRef}
@@ -297,7 +295,7 @@ All keyframes live in `theatre/PhonePe.theatre-project-state.json`. They cover t
 
 > Theatre also saves your edits in the browser's localStorage. If the page doesn't match the JSON file after you replace it, clear the site's local storage.
 
-The timeline is **10 seconds** long, and progress `0 → 1` maps to `0s → 10s`. If you make the sequence longer or shorter in the studio, update `SEQUENCE_LENGTH` in `Experience.tsx` to match.
+The timeline is **10 seconds** long, and progress `0 → 1` maps to `0s → 10s`. If you make the sequence longer or shorter in the studio, update `SEQUENCE_LENGTH` in `Experience.jsx` to match.
 
 ---
 
@@ -307,12 +305,12 @@ These are deliberately not exposed as props, so the designed look can't drift by
 
 | Constant            | File              | Default        | Effect                                                                                                        |
 | ------------------- | ----------------- | -------------- | ------------------------------------------------------------------------------------------------------------- |
-| `TOTAL_POINTS`      | `PhonePeLogo.tsx` | `7000`         | Number of particles. Lower it for weaker devices. More points means a slower first load and lower frame rate. |
-| `PALETTE`           | `PhonePeLogo.tsx` | 7 brand colors | Particle colors. The first 3 are also the base colors used when `color_transition` is `1`.                    |
-| `POINTER_SMOOTHING` | `PhonePeLogo.tsx` | `30`           | How closely the effect follows the pointer. Higher is snappier, lower is smoother.                            |
-| `BASE_FOV`          | `Experience.tsx`  | `42`           | Camera field of view on landscape and square screens.                                                         |
-| `DESIGN_ASPECT`     | `Experience.tsx`  | `1`            | The aspect ratio below which the camera starts widening to keep the logo in frame.                            |
-| `SEQUENCE_LENGTH`   | `Experience.tsx`  | `10`           | Theatre timeline length in seconds. It must match the sequence.                                               |
+| `TOTAL_POINTS`      | `PhonePeLogo.jsx` | `7000`         | Number of particles. Lower it for weaker devices. More points means a slower first load and lower frame rate. |
+| `PALETTE`           | `PhonePeLogo.jsx` | 7 brand colors | Particle colors. The first 3 are also the base colors used when `color_transition` is `1`.                    |
+| `POINTER_SMOOTHING` | `PhonePeLogo.jsx` | `30`           | How closely the effect follows the pointer. Higher is snappier, lower is smoother.                            |
+| `BASE_FOV`          | `Experience.jsx`  | `42`           | Camera field of view on landscape and square screens.                                                         |
+| `DESIGN_ASPECT`     | `Experience.jsx`  | `1`            | The aspect ratio below which the camera starts widening to keep the logo in frame.                            |
+| `SEQUENCE_LENGTH`   | `Experience.jsx`  | `10`           | Theatre timeline length in seconds. It must match the sequence.                                               |
 
 ### 7.1 Replacing the models or shapes
 

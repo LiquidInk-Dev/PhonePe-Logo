@@ -1,11 +1,15 @@
 import * as THREE from 'three'
 import { MeshBVH } from 'three-mesh-bvh';
 
-export function randomPointsInside(_geometry: THREE.BufferGeometry, count: number, ordered: boolean = false, spacing: number = 0.2) {
-  const geometry = (_geometry as THREE.BufferGeometry)
-
+/**
+ * @param {THREE.BufferGeometry} geometry
+ * @param {number} count
+ * @param {boolean} [ordered]
+ * @param {number} [spacing]
+ */
+export function randomPointsInside(geometry, count, ordered = false, spacing = 0.2) {
   geometry.computeBoundingBox();
-  const box = geometry.boundingBox!
+  const box = /** @type {THREE.Box3} */ (geometry.boundingBox)
 
   //Double Side so the ray also register hits on back faces (existing mesh)
   const mesh = new THREE.Mesh(
@@ -21,7 +25,8 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
   const ray = new THREE.Ray()
   const bvh = new MeshBVH(geometry)
 
-  const isInside = (pt: THREE.Vector3) => {
+  /** @param {THREE.Vector3} pt */
+  const isInside = (pt) => {
     // raycaster.set(pt, dir)
     // return raycaster.intersectObject(mesh, false).length % 2 === 1
     ray.set(pt, dir)
@@ -29,7 +34,8 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
   }
 
   if (ordered) {
-    const candidates: THREE.Vector3[] = []
+    /** @type {THREE.Vector3[]} */
+    const candidates = []
 
     const y = (box.min.y + box.max.y) / 2
     for (let x = box.min.x + spacing / 2; x <= box.max.x; x += spacing) {
@@ -60,7 +66,8 @@ export function randomPointsInside(_geometry: THREE.BufferGeometry, count: numbe
       )
 
       // An edge connects two corners that differ on exactly one axis
-      const edges: [THREE.Vector3, THREE.Vector3][] = []
+      /** @type {[THREE.Vector3, THREE.Vector3][]} */
+      const edges = []
       corners.forEach((corner, i) => {
         for (const bit of [1, 2, 4]) {
           if (!(i & bit)) edges.push([corner, corners[i | bit]])
