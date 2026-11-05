@@ -257,39 +257,7 @@ gsap.to(progressRef, { current: 1, duration: 4, ease: "power2.inOut" });
 
 ---
 
-## 5. Framework notes
-
-### 5.1 Vite / Create React App / plain webpack
-
-No extra configuration. Import it and use it.
-
-### 5.2 Next.js (App Router or Pages Router)
-
-WebGL only runs in the browser, so load the component on the client only:
-
-```tsx
-"use client";
-
-import dynamic from "next/dynamic";
-
-const Experience = dynamic(() => import("@/components/PhonePeExperience"), {
-  ssr: false,
-});
-```
-
-- `Experience.tsx` already starts with `"use client"`.
-- In the App Router, `dynamic(..., { ssr: false })` must be called from a **client** component, so the file above needs `'use client'` at the top.
-- Put the assets in `public/assets/...` and use absolute URLs like `/assets/models/MidPolyPhonepe.glb`.
-- If you set a `basePath` in `next.config`, add it to the asset URLs (`/your-base/assets/...`).
-- The `type` imports (`ModelUrls`, `TextureUrls`) can be imported normally from `'@/components/PhonePeExperience'`.
-
-### 5.3 TypeScript
-
-The folder is written in strict TypeScript. Your `tsconfig` needs `"resolveJsonModule": true` (the default in Vite and Next.js templates) for the Theatre state import.
-
----
-
-## 6. Interaction (mouse and touch)
+## 5. Interaction (mouse and touch)
 
 - **Mouse / pen:** particles push away from the cursor and get flicked along its direction of movement. They spring back home when it moves away.
 - **Touch:** the canvas uses `touch-action: pan-y`, so
@@ -302,7 +270,7 @@ If you override `style.touchAction`, this behavior changes. Leave it as `pan-y` 
 
 ---
 
-## 7. Editing the animation (Theatre.js)
+## 6. Editing the animation (Theatre.js)
 
 All keyframes live in `theatre/PhonePe.theatre-project-state.json`. They cover the camera, the transforms, the transitions from disk to scatter to logo, colors, the pulse and the mouse physics settings. Edit them visually:
 
@@ -333,7 +301,7 @@ The timeline is **10 seconds** long, and progress `0 → 1` maps to `0s → 10s`
 
 ---
 
-## 8. Tuning constants
+## 7. Tuning constants
 
 These are deliberately not exposed as props, so the designed look can't drift by accident. To change one, edit it in the source:
 
@@ -346,14 +314,14 @@ These are deliberately not exposed as props, so the designed look can't drift by
 | `DESIGN_ASPECT`     | `Experience.tsx`  | `1`            | The aspect ratio below which the camera starts widening to keep the logo in frame.                            |
 | `SEQUENCE_LENGTH`   | `Experience.tsx`  | `10`           | Theatre timeline length in seconds. It must match the sequence.                                               |
 
-### 8.1 Replacing the models or shapes
+### 7.1 Replacing the models or shapes
 
 - **Models:** the PhonePe `.glb` must contain a mesh named **`Mid_polly`** and the disk `.glb` one named **`Disk`**. Both must be closed (watertight) meshes, because particles are placed by testing whether a point is _inside_ the mesh.
 - **Shapes:** any 4 images. Pixels with alpha below `0.9` are cut out, so use PNG or WebP with transparency for non-square shapes.
 
 ---
 
-## 9. Performance
+## 8. Performance
 
 - Particles render in **one draw call** (instanced geometry with a custom shader).
 - On mount, points are sampled inside both meshes, sped up with `three-mesh-bvh`. This runs once on the main thread and takes a short moment on low-end phones.
@@ -362,7 +330,7 @@ These are deliberately not exposed as props, so the designed look can't drift by
 
 ---
 
-## 10. Limitations
+## 9. Limitations
 
 - **One instance per page.** The Theatre project and sheet are module-level singletons, so two `<Experience />`s at the same time would share and fight over one timeline.
 - **No WebGL fallback.** If WebGL isn't available, nothing renders. Wrap the component in an error boundary and show a static logo image as the fallback.
@@ -371,7 +339,7 @@ These are deliberately not exposed as props, so the designed look can't drift by
 
 ---
 
-## 11. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom                                                    | Likely cause                                                                                                    |
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
