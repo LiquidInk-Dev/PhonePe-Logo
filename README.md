@@ -53,7 +53,7 @@ This renders the first frame of the animation. To make it play, see [Driving the
 
 |         |                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------- |
-| React   | **16.8+** (hooks). Tested with 16.14.0. Works with the classic and the automatic JSX runtime.          |
+| React   | **16.8+** (hooks). Tested with 16.12.0 and 16.14.0. Uses the classic JSX runtime (`import React`), so it needs no 16.14+ features. |
 | Browser | WebGL 2                                                                                               |
 | Bundler | Any that can import `.js`/`.jsx` and `.json`, such as Gatsby 4+, webpack 5, Vite, Rspack or Parcel   |
 
@@ -73,7 +73,7 @@ These are the versions it was built and tested with:
 
 | Package                           | Version |
 | --------------------------------- | ------- |
-| `react`, `react-dom`              | 16.14.0 |
+| `react`, `react-dom`              | 16.12.0 (also checked on 16.14.0) |
 | `three`                           | 0.186   |
 | `three-mesh-bvh`                  | 0.9     |
 | `@theatre/core`, `@theatre/studio` | 0.7.2   |
