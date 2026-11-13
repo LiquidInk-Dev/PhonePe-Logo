@@ -36,8 +36,6 @@ void main() {
   // Plane faces +z by default
   vec3 local = vec3(position.x, 0.0, -position.y);
 
-  // Example animation: each instance pulses at its own phase
-  float phase = aRandom * 6.2831;
   local *= uBaseScale;
 
   vec3 offset = mix(aDiskAlignedOffset, aDiskScatteredOffset, uAlignedToRand);
@@ -46,7 +44,6 @@ void main() {
   float distFactor = remapClamped(length(offset), uDistInMin, uDistInMax,
                                   uDistOutMin, uDistOutMax);
   local *= distFactor;
-  // offset.y += sin(uTime + phase) * 0.01;
   vec3 finalPosition = vec3(offset + local);
 
   vec4 modelPosition = modelMatrix * vec4(finalPosition + aDisplacement, 1.0);

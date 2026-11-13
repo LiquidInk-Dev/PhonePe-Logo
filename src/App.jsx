@@ -27,7 +27,6 @@ const App = () => {
   const progressRef = useRef(0)
 
   useEffect(() => {
-    // gsap.context collects everything created inside, so revert() cleans it all up
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
@@ -43,7 +42,6 @@ const App = () => {
 
     return () => ctx.revert()
   }, [])
-
 
   return (
     <div ref={containerRef} style={{

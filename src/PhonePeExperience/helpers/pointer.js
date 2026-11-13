@@ -16,8 +16,6 @@ import * as THREE from 'three'
  *                 scroll (it fires `pointercancel`), the effect switches off for
  *                 the rest of that gesture, so it never lags along with the scroll.
  *
- * Plain values, no React state: reading them every frame causes no re-renders.
- *
  * @param {HTMLElement} element
  * @returns {Pointer}
  */

@@ -11,13 +11,12 @@ export function randomPointsInside(geometry, count, ordered = false, spacing = 0
   geometry.computeBoundingBox();
   const box = /** @type {THREE.Box3} */ (geometry.boundingBox)
 
-  //Double Side so the ray also register hits on back faces (existing mesh)
   const mesh = new THREE.Mesh(
     geometry,
     new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })
   )
 
-  //A slightly odd direction avoids hitting edges/vertices Exactlya
+  // A slightly odd direction avoids hitting edges/vertices exactly
   const dir = new THREE.Vector3(1, 0.7, 0.21).normalize()
   const p = new THREE.Vector3()
   const points = []
@@ -27,8 +26,6 @@ export function randomPointsInside(geometry, count, ordered = false, spacing = 0
 
   /** @param {THREE.Vector3} pt */
   const isInside = (pt) => {
-    // raycaster.set(pt, dir)
-    // return raycaster.intersectObject(mesh, false).length % 2 === 1
     ray.set(pt, dir)
     return bvh.raycast(ray, THREE.DoubleSide).length % 2 === 1
   }

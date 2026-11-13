@@ -15,8 +15,8 @@ const PALETTE = [
   '#f48f9a', '#ffd26a', '#6bc8c9',
 ].map((c) => new THREE.Color(c))
 
-// URLs of the GLB files. The PhonePe file must contain a mesh named `Mid_polly`, the disk file one named `Disk`.
 /**
+ * URLs of the GLB files. The PhonePe file must contain a mesh named `Mid_polly`, the disk file one named `Disk`.
  * @typedef {object} ModelUrls
  * @property {string} phonePe
  * @property {string} disk
@@ -42,9 +42,6 @@ const PALETTE = [
  * @param {import('@theatre/core').ISheet} params.sheet
  */
 export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, sheet }) {
-  // ---------------------------------------------------------------------------
-  // Geometry: one plane, instanced TOTAL_POINTS times
-  // ---------------------------------------------------------------------------
   const phonePeScatterdPoints = randomPointsInside(phonePeGeometry, TOTAL_POINTS)
   const diskScatterdPoints = randomPointsInside(diskGeometry, TOTAL_POINTS)
   const diskAlignedPoints = randomPointsInside(diskGeometry, TOTAL_POINTS, true, 0.003)
@@ -104,9 +101,6 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
 
   const velocities = new Float32Array(TOTAL_POINTS * 3)
 
-  // ---------------------------------------------------------------------------
-  // Material
-  // ---------------------------------------------------------------------------
   textures.forEach((t) => { t.colorSpace = THREE.SRGBColorSpace })
 
   const material = new THREE.ShaderMaterial({
@@ -131,9 +125,6 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
     }
   })
 
-  // ---------------------------------------------------------------------------
-  // Scene objects
-  // ---------------------------------------------------------------------------
   const group = new THREE.Group()
 
   const mesh = new THREE.Mesh(geometry, material)
@@ -151,18 +142,13 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
   )
   group.add(raycastPlane)
 
-  // ---------------------------------------------------------------------------
-  // Theatre: transforms (same keys and props @theatre/r3f used, so the saved animation still applies)
-  // ---------------------------------------------------------------------------
+  // Same keys and props @theatre/r3f used, so the saved animation still applies
   const unbindGroup = bindTransform(sheet, 'Pattern / Transformations', group)
   const unbindPlane = bindTransform(sheet, 'RayCast Plane / Transformations', raycastPlane, {
     position: [0, -0.01, 0],
     rotation: [-Math.PI / 2, 0, 0],
   })
 
-  // ---------------------------------------------------------------------------
-  // Theatre: transition + mouse controls
-  // ---------------------------------------------------------------------------
   const controls = {
     alignedToRand: 0.0,
     randToPhonePe: 0.0,
@@ -222,9 +208,6 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
     controls.mouseFadeSpeed = value.mouse_factor.fade_speed
   })
 
-  // ---------------------------------------------------------------------------
-  // Per-frame state
-  // ---------------------------------------------------------------------------
   const raycaster = new THREE.Raycaster()
   const pointerTarget = new THREE.Vector3() // where the pointer actually is
   const mouseLocal = new THREE.Vector3()    // smoothed position the particles react to
@@ -234,7 +217,6 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
   let wasHitting = false
   let mouseActive = 0
 
-  /** Uniforms + pointer tracking */
   /** @param {FrameState} state */
   const updatePointer = ({ delta, elapsed, camera, pointer }) => {
     const uniforms = material.uniforms
@@ -250,7 +232,6 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
     uniforms.uDistOutMin.value = controls.distOutMin
     uniforms.uDistOutMax.value = controls.distOutMax
 
-    // Raycasting
     raycaster.setFromCamera(pointer.position, camera)
     const hit = raycaster.intersectObject(raycastPlane)
     const mouseHitting = hit.length > 0 && pointer.isActive()
@@ -283,8 +264,10 @@ export function createPhonePeLogo({ phonePeGeometry, diskGeometry, textures, she
     )
   }
 
-  /** Spring physics pushing particles away from the pointer */
-  /** @param {number} delta */
+  /**
+   * Spring physics pushing particles away from the pointer
+   * @param {number} delta
+   */
   const updatePhysics = (delta) => {
     const disp = dispAttr.array
 

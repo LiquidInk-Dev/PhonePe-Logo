@@ -37,9 +37,6 @@ const MAX_PIXEL_RATIO = 2
 export function createExperience(container, { models, textures: textureUrls, progressRef, onReady }) {
   let disposed = false
 
-  // ---------------------------------------------------------------------------
-  // Renderer (same settings @react-three/fiber's <Canvas> used)
-  // ---------------------------------------------------------------------------
   /** @type {THREE.WebGLRenderer} */
   let renderer
   try {
@@ -61,10 +58,7 @@ export function createExperience(container, { models, textures: textureUrls, pro
 
   const scene = new THREE.Scene()
 
-  // ---------------------------------------------------------------------------
-  // Camera (Theatre key "Camera": position / near / far / zoom are editable in the studio.
-  // FOV is computed below and the camera always looks at the origin, so those aren't editable.)
-  // ---------------------------------------------------------------------------
+  // FOV is computed and the camera always looks at the origin, so only these are editable in the studio
   const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.01, 2000)
   camera.position.set(0, 1, 0)
 
@@ -91,7 +85,6 @@ export function createExperience(container, { models, textures: textureUrls, pro
   applyCamera(cameraObject.value)
   const unsubscribeCamera = cameraObject.onValuesChange(applyCamera)
 
-  // Widen the FOV on portrait screens so the square design always fits the width
   const containFov = () => {
     let fov = BASE_FOV
     if (camera.aspect < DESIGN_ASPECT) {
@@ -104,9 +97,6 @@ export function createExperience(container, { models, textures: textureUrls, pro
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Sizing
-  // ---------------------------------------------------------------------------
   const resize = () => {
     const width = container.clientWidth
     const height = container.clientHeight
@@ -119,14 +109,8 @@ export function createExperience(container, { models, textures: textureUrls, pro
   const resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(container)
 
-  // ---------------------------------------------------------------------------
-  // Input
-  // ---------------------------------------------------------------------------
   const pointer = createPointer(canvas)
 
-  // ---------------------------------------------------------------------------
-  // Render loop. Pauses while the canvas is off-screen.
-  // ---------------------------------------------------------------------------
   const timer = new THREE.Timer()
   timer.connect(document) // no huge delta after switching tabs
 
@@ -175,9 +159,6 @@ export function createExperience(container, { models, textures: textureUrls, pro
   })
   visibilityObserver.observe(container)
 
-  // ---------------------------------------------------------------------------
-  // Assets
-  // ---------------------------------------------------------------------------
   // The .glb models must be uncompressed (no Draco/Meshopt): no decoder is set up
   const gltfLoader = new GLTFLoader()
   const textureLoader = new THREE.TextureLoader()
@@ -234,9 +215,6 @@ export function createExperience(container, { models, textures: textureUrls, pro
       console.error('PhonePeExperience: failed to load assets', err)
     })
 
-  // ---------------------------------------------------------------------------
-  // Cleanup
-  // ---------------------------------------------------------------------------
   return {
     dispose() {
       disposed = true
