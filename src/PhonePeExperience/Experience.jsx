@@ -1,76 +1,67 @@
-"use client"
-
-import { Canvas, useFrame } from "@react-three/fiber"
-import PhonePeLogo from "./PhonePeLogo"
-import { initStudio, mainSheet } from "./theatre/init"
-import { PerspectiveCamera, SheetProvider } from "@theatre/r3f"
-import * as THREE from 'three'
-import { useEffect } from "react"
-
-const BASE_FOV = 42
-const DESIGN_ASPECT = 1
-
-const ContainFov = () => {
-  useFrame(({ camera, size }) => {
-    if (!(camera instanceof THREE.PerspectiveCamera)) return
-
-    const aspect = size.width / size.height
-    let fov = BASE_FOV
-
-    if (aspect < DESIGN_ASPECT) {
-      const halfTan = Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2))
-      fov = THREE.MathUtils.radToDeg(2 * Math.atan(halfTan * (DESIGN_ASPECT / aspect)))
-    }
-
-    if (camera.fov !== fov) {
-      camera.fov = fov
-      camera.updateProjectionMatrix()
-    }
-  })
-  return null
-}
+import React, { useEffect, useRef } from 'react'
+import { createExperience } from './createExperience'
+import { initStudio } from './theatre/init'
 
 /**
  * @typedef {object} ExperienceProps
- * @property {import('react').RefObject<number>} progressRef
+ * @property {{ current: number | null | undefined }} progressRef 0..1, read every frame (no re-renders)
  * @property {import('./PhonePeLogo').ModelUrls} models
  * @property {import('./PhonePeLogo').TextureUrls} textures
- * @property {boolean} [studio]
+ * @property {boolean} [studio] Loads the Theatre.js editor. Development builds only.
+ * @property {() => void} [onReady] Called once, after the assets load and the first frame renders
  * @property {string} [className]
- * @property {import('react').CSSProperties} [style]
+ * @property {React.CSSProperties} [style]
  */
 
-/** @typedef {Pick<ExperienceProps, 'progressRef' | 'models' | 'textures'>} ShellProps */
+/**
+ * The animated 3D particle PhonePe logo. Works with React 16.8+.
+ *
+ * Safe to server-render (Gatsby): it renders an empty <div> on the server, and all
+ * WebGL work happens in useEffect, which only runs in the browser.
+ *
+ * @param {ExperienceProps} props
+ */
+const Experience = ({ progressRef, models, textures, studio = false, onReady, className, style }) => {
+  const containerRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
-const SEQUENCE_LENGTH = 10
-
-/** @param {ShellProps} props */
-const Shell = ({ progressRef, models, textures }) => {
-  useFrame(() => {
-    mainSheet.sequence.position = THREE.MathUtils.mapLinear(progressRef.current ?? 0, 0, 1, 0, SEQUENCE_LENGTH)
+  // Always call the latest onReady without restarting the scene when it changes
+  const onReadyRef = useRef(onReady)
+  useEffect(() => {
+    onReadyRef.current = onReady
   })
 
-  return (
-    <SheetProvider sheet={mainSheet}>
-      {/* Dont change the camera setting */}
-      <PerspectiveCamera theatreKey="Camera" makeDefault position={[0, 1, 0]} lookAt={[0, 0, 0]} fov={BASE_FOV} />
-      <ContainFov />
-      <PhonePeLogo models={models} textures={textures} />
-    </SheetProvider>
-  )
-}
-
-
-/** @param {ExperienceProps} props */
-const Experience = ({ progressRef, models, textures, studio = false, className, style }) => {
   useEffect(() => {
     if (studio) initStudio()
   }, [studio])
 
+  // Primitive keys, so new-but-equal objects/arrays on every render don't rebuild the scene
+  const phonePeUrl = models.phonePe
+  const diskUrl = models.disk
+  const texturesKey = textures.join('\n')
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return undefined
+
+    const experience = createExperience(container, {
+      models: { phonePe: phonePeUrl, disk: diskUrl },
+      textures: /** @type {import('./PhonePeLogo').TextureUrls} */ (texturesKey.split('\n')),
+      progressRef,
+      onReady: () => {
+        if (onReadyRef.current) onReadyRef.current()
+      },
+    })
+
+    return () => experience.dispose()
+  }, [phonePeUrl, diskUrl, texturesKey, progressRef])
+
   return (
-    <Canvas
+    <div
+      ref={containerRef}
       className={className}
       style={{
+        position: 'relative',
+        overflow: 'hidden',
         height: '100%',
         width: '100%',
 
@@ -79,9 +70,7 @@ const Experience = ({ progressRef, models, textures, studio = false, className, 
         touchAction: 'pan-y',
         ...style,
       }}
-    >
-      <Shell progressRef={progressRef} models={models} textures={textures} />
-    </Canvas>
+    />
   )
 }
 
